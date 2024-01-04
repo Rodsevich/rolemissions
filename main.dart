@@ -4,14 +4,15 @@ void main(){
   //modelos
 
   sealed class Role{
-
+    List<Permission> permissions;
+    //0b0010101010101010101
   }
 
   abstract class Permission{
 
   }
 
-  enum Permissions{
+  enum EntityPermissions{
     Read,
     Write,
     Update,
