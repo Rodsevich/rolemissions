@@ -1,28 +1,20 @@
-void main(){
-  print(0x001);
+import 'package:rolemissions/src/models/permission.dart';
+
+void main() {
+  final permissions = [
+    ReadPermission(),
+    ReadPermission(),
+    ReadPermission(),
+    ReadPermission(),
+  ];
+
+  final binary = List.generate(permissions.length, (e) => e)
+      .fold('', (pv, value) => pv + (value >> 1).toRadixString(2));
+
+  print(binary);
+  print('00101101');
 }
-  //modelos
 
-  sealed class Role{
-    List<Permission> permissions;
-    //0b0010101010101010101
-  }
-
-  abstract class Permission{
-
-  }
-
-  enum EntityPermissions{
-    Read,
-    Write,
-    Update,
-    Delete;
-
-    int value => index >> 1;
-  }
-
-  0000
-  0001
-  0010
-  0100
-
+class ReadPermission extends Permission {
+  ReadPermission();
+}
