@@ -6,14 +6,8 @@ import 'package:test/test.dart';
 void main() {
   group('Rolemissions', () {
     test('works with large numbers',(){
-      StringBuffer sb = StringBuffer('enum P {');
-      for(var i = 0; i < 67; i++){
-       sb.writeln('\tp' + i.toRadixString(36) + ',');
-      }
-      sb.writeln('}');
-      print(sb.toString());
       final numero_63 = int.parse('1'.padRight(62,'1'), radix: 2);
-      final numero_64 = int.parse('1'.padRight(62,'1'), radix: 2);
+      final numero_64 = int.parse('1'.padRight(63,'1'), radix: 2);
       expect(numero_64, isNot(equals(numero_63)));
     });
     test('can be instantiated', () {
@@ -32,7 +26,21 @@ void main() {
         isNotNull,
       );
     });
+    P.values;
   });
+}
+
+enum Permissions{
+  sopri(P.values),
+  pingo(P.values);
+
+  const Permissions(this.permission);
+
+  const Permissions.from
+
+  final List<Enum> permission;
+
+  get pp => '1';
 }
 
 enum P {

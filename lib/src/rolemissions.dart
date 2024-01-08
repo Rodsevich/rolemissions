@@ -2,7 +2,7 @@ import 'package:rolemissions/src/models/permission.dart';
 import 'package:rolemissions/src/persistance_delegate/persistance_delegate.dart';
 
 /// {@template rolemissions}
-/// A Very Good Project created by Very Good CLI.
+/// A set of utilities for enabling role-based permissions in your application.
 /// {@endtemplate}
 class Rolemissions {
   /// {@macro rolemissions}
