@@ -61,7 +61,7 @@ class PostgresStrategy extends PersistanceDelegate {
   /// [schema]: The name of the schema where the tables should be created.
   Future<void> initialFixture(String schema) async {
     await connection.execute('''
-      CREATE TABLE IF NOT EXISTS $schema.role (
+      CREATE TABLE IF NOT EXISTS $schema.roles (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255),
       permissions BYTEA,
@@ -71,7 +71,7 @@ class PostgresStrategy extends PersistanceDelegate {
   ''');
 
     await connection.execute('''
-      CREATE TABLE IF NOT EXISTS $schema.permission (
+      CREATE TABLE IF NOT EXISTS $schema.permissions (
       id SERIAL PRIMARY KEY,
       value BYTEA
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
