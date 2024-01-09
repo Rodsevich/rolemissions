@@ -1,4 +1,3 @@
-import 'package:rolemissions/src/models/permission.dart';
 import 'package:rolemissions/src/persistance_delegate/persistance_delegate.dart';
 
 /// {@template rolemissions}
@@ -17,5 +16,5 @@ class Rolemissions {
   ///
   PersistanceDelegate get persistanceDelegate => _persistanceDelegate;
 
-  final List<Permission> permissions;
+  final List<List<Enum>> permissions;
 }

@@ -1,12 +1,16 @@
+/// The main class of a permission. Your base category of permission should extend this class.
+/// e.g.:
+/// ```dart
+///
+///  base class PageHomePermissions extends Permission{
+///   const P(Enum enumValue) : super(enumValue);
+///  }
+/// ```
 abstract class Permission {
-  Permission();
-}
+  final Enum enumValue;
 
-enum PermissionsEntity {
-  read,
-  write,
-  update,
-  delete;
+  Permission(this.enumValue);
 
-  int get value => index >> 1;
+  /// The bitmask of the permission. Used for persistance and checking.
+  int get bitMask => 1 << enumValue.index;
 }
