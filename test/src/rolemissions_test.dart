@@ -16,6 +16,11 @@ void main() {
       print(str64.length);
       expect(numero_64, isNot(equals(numero_63)));
     });
+    test('serializes well', () {
+      ['11111'
+      '001'
+      '1'.padLeft(129,'1')].join('-');; 
+    });
     // test('can be instantiated', () {
     //   expect(
     //     Rolemissions(
