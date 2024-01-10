@@ -17,9 +17,13 @@ void main() {
       expect(numero_64, isNot(equals(numero_63)));
     });
     test('serializes well', () {
-      ['11111'
-      '001'
-      '1'.padLeft(129,'1')].join('-');; 
+      final serializedStr = [
+        '11111'
+                '001'
+                '1'
+            .padLeft(129, '1')
+      ].join('-');
+      ;
     });
     // test('can be instantiated', () {
     //   expect(
@@ -41,6 +45,12 @@ void main() {
 }
 
 abstract class RolemissionPermissions {
+  RolemissionPermissions.fromSerialization(String serialization) {
+    _permissions = deserialization(serialization);
+  }
+
+  RolemissionPermissions.fromUser(RolemissionUser user) {}
+
   /// The permissions your app is made with. Every enum should be included here
   /// as a list like follows: (e.g.)
   /// ```dart
@@ -64,8 +74,33 @@ abstract class RolemissionPermissions {
   /// The permissions the user has
   List<List<Enum>> get permissions => _permissions;
 
-  RolemissionPermissions.fromSerialization(RolemissionUser user) {
-    user.
+  /// The max amount of bits an enum can have due to integer limitations
+  final _maxBitsLength = 64;
+
+  List<List<Enum>> deserialization(String serialization) {
+    final permissions = <List<Enum>>[];
+    final serializedPermissions =
+        serialization.split(serializationNewEnumSeparator);
+    assert(serializedPermissions.length == allPermissions.length,
+        'The amount of serialized permissions is not the same as the amount of permissions in the app');
+    for (var e = 0; e < serializedPermissions.length; e++) {
+      final serializedPermission = serializedPermissions[e];
+      final enumPermission = <Enum>[];
+      final serializedPermissionBytes =
+          serializedPermission.split(serializationEnumByteSeparator);
+      for (var i = 0; i < serializedPermissionBytes.length; i++) {
+        final number = int.parse(serializedPermissionBytes[i], radix: 36);
+        final bitsAmount = serializedPermissionBytes[i].length;
+        for (var j = 0; j <= bitsAmount; j++) {
+          final bitPosition = j + i;
+          if (number & (1 << bitPosition) != 0) {
+            enumPermission.add(allPermissions[e][bitPosition]);
+          }
+        }
+      }
+      permissions.add(enumPermission);
+    }
+    return permissions;
   }
 
   String toSerialization() {
@@ -73,14 +108,16 @@ abstract class RolemissionPermissions {
     for (final permissionEnum in permissions) {
       final enumLength =
           allPermissions[permissions.indexOf(permissionEnum)].length;
-      const maxBitsLength = 64;
-      final maxBitsLengthAmount = enumLength ~/ maxBitsLength;
+      final maxBitsLengthAmount = enumLength ~/ _maxBitsLength;
       for (var i = 0; i <= maxBitsLengthAmount; i++) {
         var number = 0;
-        permissionEnum.skip(i * 64).take(64).forEach((element) {
+        permissionEnum
+            .skip(i * _maxBitsLength)
+            .take(_maxBitsLength)
+            .forEach((element) {
           number += 1 << element.index;
         });
-        if(i > 0) buffer.write(serializationEnumByteSeparator);
+        if (i > 0) buffer.write(serializationEnumByteSeparator);
         buffer.write(number.toRadixString(36));
       }
       buffer.write(serializationNewEnumSeparator);
