@@ -91,15 +91,15 @@ abstract class RolemissionPermissions {
         var number = 0;
         permissionEnum
             .skip(i * maxBitsLength)
-            .take(maxBitsLength)
+            .take((i + 1) * maxBitsLength)
             .forEach((element) {
-          number += 1 << element.index;
+          number += 1 << (element.index % maxBitsLength);
         });
         if (i > 0) buffer.write(serializationEnumByteSeparator);
         buffer.write(number.toRadixString(36));
       }
       buffer.write(serializationNewEnumSeparator);
     }
-    return buffer.toString();
+    return buffer.toString().substring(0, buffer.length - 1);
   }
 }

@@ -1,7 +1,6 @@
 import 'package:rolemissions/src/rolemissions.dart';
 
 import '../errors/not_initialized.dart';
-import '../models/permission.dart';
 import '../models/role.dart';
 
 /// An interface pretended for being implemented in the user class of your system.

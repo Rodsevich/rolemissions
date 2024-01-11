@@ -6,6 +6,7 @@
 ///   const P(Enum enumValue) : super(enumValue);
 ///  }
 /// ```
+@Deprecated('Use a simple enum value instead')
 abstract class Permission {
   final Enum enumValue;
 

@@ -16,7 +16,7 @@ void main() {
       print(str64.length);
       expect(numero_64, isNot(equals(numero_63)));
     });
-    test('serializes well', () {
+    test('(de)serializes well', () {
       final allPermissions36 = int.parse(''.padLeft(36, '1'), radix: 2).toRadixString(36);
       final allPermissions74 = int.parse(
                   ''.padLeft(RolemissionPermissions.maxBitsLength, '1'), radix: 2)
@@ -32,6 +32,9 @@ void main() {
       expect(allPermissions.permissions[1].length, equals(74));
       expect(allPermissions.permissions[1].first, equals(E74.p0));
       expect(allPermissions.permissions[1].last, equals(E74.p21));
+
+      final serialized = allPermissions.toSerialization();
+      expect(serialized, equals('$allPermissions36-$allPermissions74'));
     });
     // test('can be instantiated', () {
     //   expect(
