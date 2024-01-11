@@ -7,15 +7,15 @@ import '../models/role.dart';
 /// An interface pretended for being implemented in the user class of your system.
 abstract class RolemissionUser {
   /// The [Rolemissions] instance that is used for checking and persisting permissions.
-  Rolemissions get rolemissions;
+  RolemissionPermissions get rolemissions;
 
   bool _isInitialized = false;
 
   /// A method that should be called when the user's roles and privileges are intended
   /// for being queried.
-  void initRolemissions(String serializedRoles, String serializedPrivileges) {
-    _roles = rolemissions.deserializeRoles(serializedRoles);
-    _privileges = rolemissions.deserializePrivileges(serializedPrivileges);
+  void initRolemissions(List<Role> roles, String serializedPrivileges) {
+    _roles = roles;
+    _privileges = rolemissions.deserialization(serializedPrivileges);
     _isInitialized = true;
   }
 
@@ -27,10 +27,10 @@ abstract class RolemissionUser {
       _isInitialized ? _roles : throw NotInitializedRolemissions.roles();
 
   /// The permissions of the user that gets bypassing his roles.
-  List<Permission> _privileges = [];
+  List<List<Enum>> _privileges = [];
 
   /// The permissions of the user that gets bypassing his roles.
-  List<Permission> get privileges => _isInitialized
+  List<List<Enum>> get privileges => _isInitialized
       ? _privileges
       : throw NotInitializedRolemissions.privileges();
 }

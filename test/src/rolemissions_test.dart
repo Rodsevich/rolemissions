@@ -1,5 +1,5 @@
 // ignore_for_file: prefer_const_constructors
-import 'package:rolemissions/src/interfaces/user.dart';
+import 'package:rolemissions/rolemissions.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -17,13 +17,21 @@ void main() {
       expect(numero_64, isNot(equals(numero_63)));
     });
     test('serializes well', () {
-      final serializedStr = [
-        '11111'
-                '001'
-                '1'
-            .padLeft(129, '1')
-      ].join('-');
-      ;
+      final allPermissions36 = int.parse(''.padLeft(36, '1'), radix: 2).toRadixString(36);
+      final allPermissions74 = int.parse(
+                  ''.padLeft(RolemissionPermissions.maxBitsLength, '1'), radix: 2)
+              .toRadixString(36) +
+          RolemissionPermissions.serializationEnumByteSeparator +
+          int.parse(''.padLeft(74 - RolemissionPermissions.maxBitsLength, '1'), radix: 2)
+              .toRadixString(36);
+      final allPermissions =
+          Permissions.fromSerialization('$allPermissions36-$allPermissions74');
+      expect(allPermissions.permissions.first.length, equals(36));
+      expect(allPermissions.permissions.first.first, equals(E36.p0));
+      expect(allPermissions.permissions.first.last, equals(E36.pz));
+      expect(allPermissions.permissions[1].length, equals(74));
+      expect(allPermissions.permissions[1].first, equals(E74.p0));
+      expect(allPermissions.permissions[1].last, equals(E74.p21));
     });
     // test('can be instantiated', () {
     //   expect(
@@ -44,99 +52,17 @@ void main() {
   });
 }
 
-abstract class RolemissionPermissions {
-  RolemissionPermissions.fromSerialization(String serialization) {
-    _permissions = deserialization(serialization);
-  }
-
-  RolemissionPermissions.fromUser(RolemissionUser user) {}
-
-  /// The permissions your app is made with. Every enum should be included here
-  /// as a list like follows: (e.g.)
-  /// ```dart
-  /// List<List<Enum>> get allPermissions => [
-  ///   PageHomePermissions.values,
-  ///   PageSettingsPermissions.values,
-  /// ];
-  /// ```
-  List<List<Enum>> get allPermissions;
-
-  /// The separator used to separate the permissions [String] when serializing
-  /// one enum from the other.
-  static String serializationNewEnumSeparator = '-';
-
-  /// The separator used to separate the permissions [String] when serializing
-  /// one enum from the other.
-  static String serializationEnumByteSeparator = '.';
-
-  List<List<Enum>> _permissions = [];
-
-  /// The permissions the user has
-  List<List<Enum>> get permissions => _permissions;
-
-  /// The max amount of bits an enum can have due to integer limitations
-  final _maxBitsLength = 64;
-
-  List<List<Enum>> deserialization(String serialization) {
-    final permissions = <List<Enum>>[];
-    final serializedPermissions =
-        serialization.split(serializationNewEnumSeparator);
-    assert(serializedPermissions.length == allPermissions.length,
-        'The amount of serialized permissions is not the same as the amount of permissions in the app');
-    for (var e = 0; e < serializedPermissions.length; e++) {
-      final serializedPermission = serializedPermissions[e];
-      final enumPermission = <Enum>[];
-      final serializedPermissionBytes =
-          serializedPermission.split(serializationEnumByteSeparator);
-      for (var i = 0; i < serializedPermissionBytes.length; i++) {
-        final number = int.parse(serializedPermissionBytes[i], radix: 36);
-        final bitsAmount = serializedPermissionBytes[i].length;
-        for (var j = 0; j <= bitsAmount; j++) {
-          final bitPosition = j + i;
-          if (number & (1 << bitPosition) != 0) {
-            enumPermission.add(allPermissions[e][bitPosition]);
-          }
-        }
-      }
-      permissions.add(enumPermission);
-    }
-    return permissions;
-  }
-
-  String toSerialization() {
-    final buffer = StringBuffer();
-    for (final permissionEnum in permissions) {
-      final enumLength =
-          allPermissions[permissions.indexOf(permissionEnum)].length;
-      final maxBitsLengthAmount = enumLength ~/ _maxBitsLength;
-      for (var i = 0; i <= maxBitsLengthAmount; i++) {
-        var number = 0;
-        permissionEnum
-            .skip(i * _maxBitsLength)
-            .take(_maxBitsLength)
-            .forEach((element) {
-          number += 1 << element.index;
-        });
-        if (i > 0) buffer.write(serializationEnumByteSeparator);
-        buffer.write(number.toRadixString(36));
-      }
-      buffer.write(serializationNewEnumSeparator);
-    }
-    return buffer.toString();
-  }
-}
-
 class Permissions extends RolemissionPermissions {
   Permissions.fromSerialization(super.user) : super.fromSerialization();
 
   @override
   List<List<Enum>> get allPermissions => [
-        P.values,
-        Q.values,
+        E36.values,
+        E74.values,
       ];
 }
 
-enum P {
+enum E36 {
   p0,
   p1,
   p2,
@@ -175,7 +101,7 @@ enum P {
   pz;
 }
 
-enum Q {
+enum E74 {
   p0,
   p1,
   p2,
@@ -250,42 +176,4 @@ enum Q {
   p1z,
   p20,
   p21;
-
-  int get value => 1 << index;
-  // int get values {
-  //   Solicitud solicitud = await Solicitudes.fromMap(map);
-
-  //   '''{
-  //     'solicitudes': [
-  //       {
-  //         'tipo': 0,
-  //         'texto': 'Hola',
-  //         'conforme': true,
-  //         'fechaCreacion': '2021-10-10T10:10:10.000Z',
-  //       },
-  //       {
-  //         'tipo': 1,
-  //         'lacstm': 2,
-  //         'saiudhsa': 'hola puto0',
-  //         'fechaCreacion': '2021-10-10T10:10:10.000Z',
-  //       },
-  //     ],
-  //   }''';
-  // }
 }
-
-class Rolemissions {}
-
-base class Solicitud {
-  Solicitud._({required this.fechaCreacion});
-
-  final DateTime fechaCreacion;
-}
-
-// final class SolicitudDeNotificacion extends Solicitud {
-//   SolicitudDeNotificacion._({required super.fechaCreacion});
-
-//   static const int index = 0;
-//   String texto;
-//   bool? conforme;
-// }
