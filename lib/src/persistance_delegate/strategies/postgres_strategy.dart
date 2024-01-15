@@ -27,15 +27,11 @@ class PostgresStrategy extends PersistanceDelegate {
 
     /// The port number on which the PostgreSQL server is listening.
     required int port,
-
-    /// The SSL mode to use for the connection
-    SslMode? sslMode,
   })  : _host = host,
         _databaseName = databaseName,
         _userName = userName,
         _dbPassword = dbPassword,
         _port = port,
-        _sslMode = sslMode,
         super();
 
   @override
@@ -51,10 +47,8 @@ class PostgresStrategy extends PersistanceDelegate {
 
   final int _port;
 
-  final SslMode? _sslMode;
-
   /// The connection to the database
-  late final Connection connection;
+  late final PostgreSQLConnection connection;
 
   /// Initializes the database with the necessary tables for email persistence.
   ///
@@ -92,20 +86,15 @@ class PostgresStrategy extends PersistanceDelegate {
 
   @override
   Future<void> setUp() async {
-    connection = await Connection.open(
-      Endpoint(
-        host: _host,
-        database: _databaseName,
-        username: _userName,
-        password: _dbPassword,
-        port: _port,
-      ),
-      settings: _sslMode != null
-          ? ConnectionSettings(
-              sslMode: _sslMode,
-            )
-          : null,
+    connection = PostgreSQLConnection(
+      _host,
+      _port,
+      _databaseName,
+      username: _userName,
+      password: _dbPassword,
     );
+
+    await connection.open();
   }
 
   @override
@@ -114,11 +103,9 @@ class PostgresStrategy extends PersistanceDelegate {
     required int permissions,
   }) async {
     try {
-      final query = await connection.execute(
-        Sql.named(
-          'INSERT INTO role (name, permissions) VALUES (@name, @permissions) RETURNING *',
-        ),
-        parameters: {
+      final query = await connection.query(
+        'INSERT INTO role (name, permissions) VALUES (@name, @permissions) RETURNING *',
+        substitutionValues: {
           'name': name,
           'permissions': permissions,
         },
@@ -141,8 +128,8 @@ class PostgresStrategy extends PersistanceDelegate {
 
   @override
   Future<List<Role>> getRoles() async {
-    final query = await connection.execute(
-      Sql.named('SELECT * FROM role'),
+    final query = await connection.query(
+      'SELECT * FROM role',
     );
 
     return query
@@ -158,9 +145,9 @@ class PostgresStrategy extends PersistanceDelegate {
   @override
   Future<bool> deleteRole({required String id}) async {
     try {
-      await connection.execute(
-        Sql.named('DELETE FROM role WHERE id = @roleId'),
-        parameters: {
+      await connection.query(
+        'DELETE FROM role WHERE id = @roleId',
+        substitutionValues: {
           'roleId': id,
         },
       );
@@ -174,11 +161,9 @@ class PostgresStrategy extends PersistanceDelegate {
   @override
   Future<Role> updateRole(Role role) async {
     try {
-      final query = await connection.execute(
-        Sql.named(
-          'UPDATE role SET name = @name, permissions = @permissions, updatedAt = CURRENT_TIMESTAMP WHERE id = @roleId RETURNING *',
-        ),
-        parameters: {
+      final query = await connection.query(
+        'UPDATE role SET name = @name, permissions = @permissions, updatedAt = CURRENT_TIMESTAMP WHERE id = @roleId RETURNING *',
+        substitutionValues: {
           'name': role.name,
           // TODO(andre): convert to binary.
           'permissions': ''
