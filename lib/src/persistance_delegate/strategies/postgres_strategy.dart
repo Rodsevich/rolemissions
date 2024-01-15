@@ -59,7 +59,10 @@ class PostgresStrategy extends PersistanceDelegate {
   /// Initializes the database with the necessary tables for email persistence.
   ///
   /// [schema]: The name of the schema where the tables should be created.
-  Future<void> initialFixture(String schema) async {
+  Future<void> initialFixture(
+    String schema, {
+    required String userTable,
+  }) async {
     await connection.execute('''
       CREATE TABLE IF NOT EXISTS $schema.roles (
       id SERIAL PRIMARY KEY,
@@ -73,10 +76,15 @@ class PostgresStrategy extends PersistanceDelegate {
     await connection.execute('''
       CREATE TABLE IF NOT EXISTS $schema.permissions (
       id SERIAL PRIMARY KEY,
-      value BYTEA
+      value VARCHAR(255)
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     );
+  ''');
+
+    await connection.execute('''
+      ALTER TABLE $schema.$userTable
+      ADD COLUMN permissions VARCHAR(255);
   ''');
 
     return;
@@ -173,9 +181,7 @@ class PostgresStrategy extends PersistanceDelegate {
         parameters: {
           'name': role.name,
           // TODO(andre): convert to binary.
-          'permissions':
-              List.generate(role.permissions.length, (e) => e.toRadixString(2))
-                  .join(),
+          'permissions': ''
         },
       );
 
