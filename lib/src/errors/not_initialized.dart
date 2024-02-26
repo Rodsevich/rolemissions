@@ -1,5 +1,6 @@
 /// Error thrown when the rolemissions package was not properly initialized
 class NotInitializedRolemissions extends StateError {
+  /// Use this [StateError] when the rolemissions package was not initialized
   NotInitializedRolemissions() : super('Rolemissions is not initialized');
 
   /// Use this [StateError] when the user's privileges were not initialized

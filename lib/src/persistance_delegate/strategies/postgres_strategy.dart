@@ -4,7 +4,8 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:postgres/postgres.dart';
-import 'package:rolemissions/src/models/role.dart';
+import 'package:rolemissions/rolemissions.dart';
+import 'package:rolemissions/src/models/models.dart';
 import 'package:rolemissions/src/persistance_delegate/persistance_delegate.dart';
 
 /// {@template PostgresStrategy}
@@ -27,11 +28,23 @@ class PostgresStrategy extends PersistanceDelegate {
 
     /// The port number on which the PostgreSQL server is listening.
     required int port,
+
+    /// The schema where the tables should be created.
+    String schema = '',
+
+    /// The name of the table where the roles will be stored.
+    String roleTable = 'roles',
+
+    /// The name of the table where the user-role relations will be stored.
+    String userRoleRelationTable = 'user_role_relation',
   })  : _host = host,
         _databaseName = databaseName,
         _userName = userName,
         _dbPassword = dbPassword,
         _port = port,
+        _schema = schema,
+        _roleTable = roleTable,
+        _userRoleRelationTable = userRoleRelationTable,
         super();
 
   @override
@@ -47,38 +60,60 @@ class PostgresStrategy extends PersistanceDelegate {
 
   final int _port;
 
+  final String _schema;
+
+  String get _schemaLabel => _schema.isNotEmpty ? '$_schema.' : '';
+
+  final String _roleTable;
+
+  final String _userRoleRelationTable;
+
   /// The connection to the database
   late final PostgreSQLConnection connection;
 
   /// Initializes the database with the necessary tables for email persistence.
   ///
   /// [schema]: The name of the schema where the tables should be created.
-  Future<void> initialFixture(
-    String schema, {
+  @override
+  Future<void> initialFixture({
     required String userTable,
   }) async {
+    connection = PostgreSQLConnection(
+      _host,
+      _port,
+      _databaseName,
+      username: _userName,
+      password: _dbPassword,
+    );
+
+    await connection.open();
+
     await connection.execute('''
-      CREATE TABLE IF NOT EXISTS $schema.roles (
+      CREATE TABLE IF NOT EXISTS $_schemaLabel$_roleTable (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255),
-      permissions BYTEA,
-      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      permissions VARCHAR(255),
+      "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   ''');
 
     await connection.execute('''
-      CREATE TABLE IF NOT EXISTS $schema.permissions (
+      CREATE TABLE IF NOT EXISTS $_schemaLabel$_userRoleRelationTable (
       id SERIAL PRIMARY KEY,
-      value VARCHAR(255)
-      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "organizationId" INT NOT NULL,
+      "roleId" INT NOT NULL,
+      "userId" INT NOT NULL,
+      "privileges" VARCHAR(255),
+      "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   ''');
 
+    // TODO(anyone): Add validation to check if the column already exists.
     await connection.execute('''
-      ALTER TABLE $schema.$userTable
-      ADD COLUMN permissions VARCHAR(255);
+      ALTER TABLE $_schemaLabel$userTable
+      ADD COLUMN privileges VARCHAR(255)
   ''');
 
     return;
@@ -100,22 +135,30 @@ class PostgresStrategy extends PersistanceDelegate {
   @override
   Future<Role> insertRole({
     required String name,
-    required int permissions,
+    required String permissions,
   }) async {
     try {
       final query = await connection.query(
-        'INSERT INTO role (name, permissions) VALUES (@name, @permissions) RETURNING *',
+        '''
+        INSERT INTO ${_schemaLabel}roles (name, permissions, "createdAt", "updatedAt") 
+        VALUES (@name, @permissions, @createdAt, @updatedAt) RETURNING *
+        ''',
         substitutionValues: {
           'name': name,
           'permissions': permissions,
+          'createdAt': DateTime.now(),
+          'updatedAt': DateTime.now(),
         },
       );
 
       final createdRole = query.map(
         (row) {
           return Role(
-            name: row[0] as String? ?? '',
-            permissions: [],
+            id: row[0] as int,
+            name: row[1] as String? ?? '',
+            permissions: row[2] as String,
+            createdAt: DateTime.parse(row[3].toString()),
+            updatedAt: DateTime.parse(row[4].toString()),
           );
         },
       ).first;
@@ -129,30 +172,33 @@ class PostgresStrategy extends PersistanceDelegate {
   @override
   Future<List<Role>> getRoles() async {
     final query = await connection.query(
-      'SELECT * FROM role',
+      'SELECT * FROM ${_schemaLabel}roles',
     );
 
     return query
         .map(
           (row) => Role(
-            name: row[0] as String? ?? '',
-            permissions: [],
+            id: row[0] as int,
+            name: row[1] as String? ?? '',
+            permissions: row[2] as String,
+            createdAt: DateTime.parse(row[3].toString()),
+            updatedAt: DateTime.parse(row[4].toString()),
           ),
         )
         .toList();
   }
 
   @override
-  Future<bool> deleteRole({required String id}) async {
+  Future<int> deleteRole(int id) async {
     try {
-      await connection.query(
-        'DELETE FROM role WHERE id = @roleId',
+      final query = await connection.query(
+        'DELETE FROM ${_schemaLabel}roles WHERE id = @roleId RETURNING id',
         substitutionValues: {
           'roleId': id,
         },
       );
 
-      return true;
+      return query.map((row) => row[0] as int).first;
     } catch (e) {
       rethrow;
     }
@@ -162,20 +208,22 @@ class PostgresStrategy extends PersistanceDelegate {
   Future<Role> updateRole(Role role) async {
     try {
       final query = await connection.query(
-        'UPDATE role SET name = @name, permissions = @permissions, updatedAt = CURRENT_TIMESTAMP WHERE id = @roleId RETURNING *',
+        'UPDATE roles SET name = @name, permissions = @permissions, "updatedAt" = CURRENT_TIMESTAMP WHERE id = @roleId RETURNING *',
         substitutionValues: {
+          'roleId': role.id,
           'name': role.name,
-          // TODO(andre): convert to binary.
-          'permissions': ''
+          'permissions': role.permissions,
         },
       );
 
       final updatedRole = query.map(
         (row) {
           return Role(
-            name: row[0] as String? ?? '',
-            // TODO(andre): convert to list of permissions.
-            permissions: [],
+            id: row[0] as int,
+            name: row[1] as String,
+            permissions: row[2] as String,
+            createdAt: DateTime.parse(row[3].toString()),
+            updatedAt: DateTime.parse(row[4].toString()),
           );
         },
       ).first;
@@ -184,5 +232,72 @@ class PostgresStrategy extends PersistanceDelegate {
     } catch (e) {
       rethrow;
     }
+  }
+
+  @override
+  FutureOr<Role> getRoleById(int id) async {
+    final query = await connection.query(
+      'SELECT * FROM roles WHERE id = @roleId',
+      substitutionValues: {
+        'roleId': id,
+      },
+    );
+
+    return query.map(
+      (row) {
+        return Role(
+          id: row[0] as int,
+          name: row[1] as String,
+          permissions: row[2] as String,
+          createdAt: DateTime.parse(row[3].toString()),
+          updatedAt: DateTime.parse(row[4].toString()),
+        );
+      },
+    ).first;
+  }
+
+  @override
+  FutureOr<int> relateRoleToUser({
+    required int userId,
+    required int roleId,
+    required int organizationId,
+    String? privileges,
+  }) async {
+    final query = await connection.query(
+      '''
+      INSERT INTO user_role_relation ("userId", "roleId", "organizationId", "privileges") 
+      VALUES (@userId, @roleId, @organizationId, @privileges) RETURNING id
+      ''',
+      substitutionValues: {
+        'userId': userId,
+        'roleId': roleId,
+        'organizationId': organizationId,
+        'privileges': privileges,
+      },
+    );
+
+    return query.map((row) => row[0] as int).first;
+  }
+
+  @override
+  FutureOr<bool> updateUserPrivileges({
+    required int userId,
+    required int organizationId,
+    required String privileges,
+  }) async {
+    final query = await connection.query(
+      '''
+      UPDATE user_role_relation 
+      SET "privileges" = @privileges, "updatedAt" = CURRENT_TIMESTAMP 
+      WHERE "userId" = @userId AND "organizationId" = @organizationId
+      ''',
+      substitutionValues: {
+        'userId': userId,
+        'organizationId': organizationId,
+        'privileges': privileges,
+      },
+    );
+
+    return query.isNotEmpty;
   }
 }

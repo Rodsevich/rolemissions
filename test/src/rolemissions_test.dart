@@ -19,7 +19,7 @@ void main() {
     test('(de)serializes well', () {
       final allPermissions36 = int.parse(''.padLeft(36, '1'), radix: 2).toRadixString(36);
       final allPermissions74 = int.parse(
-                  ''.padLeft(RolemissionPermissions.maxBitsLength, '1'), radix: 2)
+                  ''.padLeft(RolemissionPermissions.maxBitsLength, '1'), radix: 2,)
               .toRadixString(36) +
           RolemissionPermissions.serializationEnumByteSeparator +
           int.parse(''.padLeft(74 - RolemissionPermissions.maxBitsLength, '1'), radix: 2)
