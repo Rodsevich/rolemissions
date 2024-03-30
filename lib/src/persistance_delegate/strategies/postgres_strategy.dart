@@ -60,7 +60,7 @@ class PostgresStrategy extends PersistanceDelegate {
     await connection.execute('''
       CREATE TABLE IF NOT EXISTS $schema.roles (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(255),
+      name TEXT,
       permissions BYTEA,
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -70,7 +70,7 @@ class PostgresStrategy extends PersistanceDelegate {
     await connection.execute('''
       CREATE TABLE IF NOT EXISTS $schema.permissions (
       id SERIAL PRIMARY KEY,
-      value VARCHAR(255)
+      value TEXT
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     );
@@ -78,7 +78,7 @@ class PostgresStrategy extends PersistanceDelegate {
 
     await connection.execute('''
       ALTER TABLE $schema.$userTable
-      ADD COLUMN permissions VARCHAR(255);
+      ADD COLUMN permissions TEXT;
   ''');
 
     return;
