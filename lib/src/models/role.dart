@@ -4,12 +4,48 @@
 class Role {
   /// {@macro Role}
   Role({
+    required this.id,
     required this.name,
     required this.permissions,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  /// The permissions of the role.
-  final List<List<Enum>> permissions;
+  /// {@macro fromJson}
+  factory Role.fromJson(
+    Map<String, dynamic> json,
+    // ignore: avoid_unused_constructor_parameters
+    Object serializationManager,
+  ) {
+    return Role(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      permissions: json['permissions'] as String,
+      createdAt: DateTime.parse(json['createdAt'].toString()),
+      updatedAt: DateTime.parse(json['createdAt'].toString()),
+    );
+  }
 
+  final int id;
+
+  /// The permissions of the role.
+  final String permissions;
+
+  /// The name of the role.
   final String name;
+
+  final DateTime createdAt;
+
+  final DateTime updatedAt;
+
+  /// This is the JSON representation of the Role class.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'permissions': permissions,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': createdAt.toIso8601String(),
+    };
+  }
 }

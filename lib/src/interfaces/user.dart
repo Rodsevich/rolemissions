@@ -1,16 +1,18 @@
+import 'package:rolemissions/src/errors/not_initialized.dart';
+import 'package:rolemissions/src/models/models.dart';
 import 'package:rolemissions/src/rolemissions.dart';
 
-import '../errors/not_initialized.dart';
-import '../models/role.dart';
-
-/// An interface pretended for being implemented in the user class of your system.
+/// An interface pretended for being implemented in the user class of your
+/// system.
 abstract class RolemissionUser {
-  /// The [Rolemissions] instance that is used for checking and persisting permissions.
+  /// The [Rolemissions] instance that is used for checking and persisting
+  /// permissions.
   RolemissionPermissions get rolemissions;
 
   bool _isInitialized = false;
 
-  /// A method that should be called when the user's roles and privileges are intended
+  /// A method that should be called when the user's roles and privileges are
+  /// intended
   /// for being queried.
   void initRolemissions(List<Role> roles, String serializedPrivileges) {
     _roles = roles;
