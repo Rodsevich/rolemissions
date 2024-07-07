@@ -69,7 +69,7 @@ class PostgresStrategy extends PersistanceDelegate {
   final String _userRoleRelationTable;
 
   /// The connection to the database
-  late final PostgreSQLConnection connection;
+  late final Connection connection;
 
   /// Initializes the database with the necessary tables for email persistence.
   ///
@@ -78,15 +78,15 @@ class PostgresStrategy extends PersistanceDelegate {
   Future<void> initialFixture({
     required String userTable,
   }) async {
-    connection = PostgreSQLConnection(
-      _host,
-      _port,
-      _databaseName,
-      username: _userName,
-      password: _dbPassword,
+    connection = await Connection.open(
+      Endpoint(
+        database: _databaseName,
+        host: _host,
+        port: _port,
+        username: _userName,
+        password: _dbPassword,
+      ),
     );
-
-    await connection.open();
 
     await connection.execute('''
       CREATE TABLE IF NOT EXISTS $_schemaLabel$_roleTable (
@@ -121,15 +121,15 @@ class PostgresStrategy extends PersistanceDelegate {
 
   @override
   Future<void> setUp() async {
-    connection = PostgreSQLConnection(
-      _host,
-      _port,
-      _databaseName,
-      username: _userName,
-      password: _dbPassword,
+    connection = await Connection.open(
+      Endpoint(
+        database: _databaseName,
+        host: _host,
+        port: _port,
+        username: _userName,
+        password: _dbPassword,
+      ),
     );
-
-    await connection.open();
   }
 
   @override
@@ -138,12 +138,12 @@ class PostgresStrategy extends PersistanceDelegate {
     required String permissions,
   }) async {
     try {
-      final query = await connection.query(
+      final query = await connection.execute(
         '''
         INSERT INTO ${_schemaLabel}roles (name, permissions, "createdAt", "updatedAt") 
         VALUES (@name, @permissions, @createdAt, @updatedAt) RETURNING *
         ''',
-        substitutionValues: {
+        parameters: {
           'name': name,
           'permissions': permissions,
           'createdAt': DateTime.now(),
@@ -171,7 +171,7 @@ class PostgresStrategy extends PersistanceDelegate {
 
   @override
   Future<List<Role>> getRoles() async {
-    final query = await connection.query(
+    final query = await connection.execute(
       'SELECT * FROM ${_schemaLabel}roles',
     );
 
@@ -191,9 +191,9 @@ class PostgresStrategy extends PersistanceDelegate {
   @override
   Future<int> deleteRole(int id) async {
     try {
-      final query = await connection.query(
+      final query = await connection.execute(
         'DELETE FROM ${_schemaLabel}roles WHERE id = @roleId RETURNING id',
-        substitutionValues: {
+        parameters: {
           'roleId': id,
         },
       );
@@ -207,9 +207,9 @@ class PostgresStrategy extends PersistanceDelegate {
   @override
   Future<Role> updateRole(Role role) async {
     try {
-      final query = await connection.query(
+      final query = await connection.execute(
         'UPDATE roles SET name = @name, permissions = @permissions, "updatedAt" = CURRENT_TIMESTAMP WHERE id = @roleId RETURNING *',
-        substitutionValues: {
+        parameters: {
           'roleId': role.id,
           'name': role.name,
           'permissions': role.permissions,
@@ -236,9 +236,9 @@ class PostgresStrategy extends PersistanceDelegate {
 
   @override
   FutureOr<Role> getRoleById(int id) async {
-    final query = await connection.query(
+    final query = await connection.execute(
       'SELECT * FROM roles WHERE id = @roleId',
-      substitutionValues: {
+      parameters: {
         'roleId': id,
       },
     );
@@ -263,12 +263,12 @@ class PostgresStrategy extends PersistanceDelegate {
     required int organizationId,
     String? privileges,
   }) async {
-    final query = await connection.query(
+    final query = await connection.execute(
       '''
       INSERT INTO user_role_relation ("userId", "roleId", "organizationId", "privileges") 
       VALUES (@userId, @roleId, @organizationId, @privileges) RETURNING id
       ''',
-      substitutionValues: {
+      parameters: {
         'userId': userId,
         'roleId': roleId,
         'organizationId': organizationId,
@@ -285,13 +285,13 @@ class PostgresStrategy extends PersistanceDelegate {
     required int organizationId,
     required String privileges,
   }) async {
-    final query = await connection.query(
+    final query = await connection.execute(
       '''
       UPDATE user_role_relation 
       SET "privileges" = @privileges, "updatedAt" = CURRENT_TIMESTAMP 
       WHERE "userId" = @userId AND "organizationId" = @organizationId
       ''',
-      substitutionValues: {
+      parameters: {
         'userId': userId,
         'organizationId': organizationId,
         'privileges': privileges,

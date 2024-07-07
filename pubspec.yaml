@@ -1,6 +1,6 @@
 name: rolemissions
 description: A Very Good Project created by Very Good CLI.
-version: 0.1.0+1
+version: 0.2.0
 publish_to: none
 
 environment:
@@ -12,4 +12,4 @@ dev_dependencies:
   very_good_analysis: ^5.1.0
 dependencies:
   logging: ^1.2.0
-  postgres: ^2.6.1
+  postgres: ^3.0.1
