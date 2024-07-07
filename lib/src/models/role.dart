@@ -14,8 +14,6 @@ class Role {
   /// {@macro fromJson}
   factory Role.fromJson(
     Map<String, dynamic> json,
-    // ignore: avoid_unused_constructor_parameters
-    Object serializationManager,
   ) {
     return Role(
       id: json['id'] as int,
