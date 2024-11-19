@@ -86,6 +86,9 @@ class PostgresStrategy extends PersistanceDelegate {
         username: _userName,
         password: _dbPassword,
       ),
+      settings: const ConnectionSettings(
+        sslMode: SslMode.disable,
+      ),
     );
 
     await connection.execute('''
@@ -128,6 +131,9 @@ class PostgresStrategy extends PersistanceDelegate {
         port: _port,
         username: _userName,
         password: _dbPassword,
+      ),
+      settings: const ConnectionSettings(
+        sslMode: SslMode.disable,
       ),
     );
   }
